@@ -101,7 +101,9 @@ public class App {
     	} catch (IOException excecaoArquivo) {
     		produtosCadastrados = null;
     	} finally {
-    		arquivo.close();
+            if (arquivo != null) {
+                arquivo.close();
+            }
     	}
     	
     	return produtosCadastrados;
@@ -128,25 +130,45 @@ public class App {
     }
     
     /** Localiza um produto na árvore de produtos organizados por id, a partir do código de produto informado pelo usuário, e o retorna. 
-     *  Em caso de não encontrar o produto, retorna null */
+     * Em caso de não encontrar o produto, retorna null */
     static Produto localizarProdutoID(ABB<Integer, Produto> produtosCadastrados) {
         
-        // TODO
-    	return null;
+        if (produtosCadastrados == null) {
+            System.out.println("Árvore de ID não carregada. Carregue os produtos por ID (opção 3) primeiro.");
+            return null;
+        }
+
+        Integer idProcurado = lerOpcao("Digite o ID do produto:", Integer.class);
+        
+        if(idProcurado == null){
+            System.out.println("Entrada inválida.");
+            return null;
+        }
+
+        // Invoca o método genérico que já imprime comparações e tempo
+        return localizarProduto(produtosCadastrados, idProcurado);
     }
     
     /** Localiza um produto na árvore de produtos organizados por nome, a partir do nome de produto informado pelo usuário, e o retorna. 
-     *  A busca não é sensível ao caso. Em caso de não encontrar o produto, retorna null */
+     * A busca não é sensível ao caso. Em caso de não encontrar o produto, retorna null */
     static Produto localizarProdutoNome(ABB<String, Produto> produtosCadastrados) {
         
-    	// TODO
-    	return null;
+        if (produtosCadastrados == null) {
+            System.out.println("Árvore de Nomes não carregada. Carregue os produtos por nome (opção 2) primeiro.");
+            return null;
+        }
+        
+        System.out.println("Digite o nome/descrição do produto:");
+        String nomeProcurado = teclado.nextLine();
+
+        // Invoca o método genérico que já imprime comparações e tempo
+    	return localizarProduto(produtosCadastrados, nomeProcurado);
     }
     
     private static void mostrarProduto(Produto produto) {
     	
         cabecalho();
-        String mensagem = "Dados inválidos para o produto!";
+        String mensagem = "Produto não encontrado ou dados inválidos.";
         
         if (produto != null){
             mensagem = String.format("Dados do produto:\n%s", produto);
@@ -160,7 +182,11 @@ public class App {
     	
         cabecalho();
         System.out.println("\nPRODUTOS CADASTRADOS:");
-        System.out.println(produtosCadastrados.toString());
+        if (produtosCadastrados != null) {
+            System.out.println(produtosCadastrados.toString());
+        } else {
+            System.out.println("Nenhuma árvore de produtos foi carregada ainda.");
+        }
     }
     
 	public static void main(String[] args) {
@@ -170,15 +196,22 @@ public class App {
         int opcao = -1;
       
         do{
+            limparTela();
             opcao = menu();
             switch (opcao) {
                 case 1 -> listarTodosOsProdutos(produtosCadastradosPorNome);
-                case 2 -> produtosCadastradosPorNome = lerProdutos(nomeArquivoDados, (p -> p.descricao));
-                case 3 -> produtosCadastradosPorId = lerProdutos(nomeArquivoDados, (p -> p.idProduto));
+                case 2 -> {
+                    produtosCadastradosPorNome = lerProdutos(nomeArquivoDados, (p -> p.descricao));
+                    System.out.println("Produtos carregados por nome.");
+                }
+                case 3 -> {
+                    produtosCadastradosPorId = lerProdutos(nomeArquivoDados, (p -> p.idProduto));
+                    System.out.println("Produtos carregados por ID.");
+                }
                 case 4 -> mostrarProduto(localizarProdutoNome(produtosCadastradosPorNome));
                 case 5 -> mostrarProduto(localizarProdutoID(produtosCadastradosPorId));
             }
-            pausa();
+            if (opcao != 0) pausa();
         }while(opcao != 0);       
 
         teclado.close();    
