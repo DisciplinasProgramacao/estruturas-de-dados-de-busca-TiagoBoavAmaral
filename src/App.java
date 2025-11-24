@@ -75,9 +75,6 @@ public class App {
         }
     }
     
-    /**
-     * TAREFA 1: Método atualizado para instanciar uma árvore AVL
-     */
     static <K> ABB<K, Produto> lerProdutos(String nomeArquivoDados, Function<Produto, K> extratorDeChave) {
     	
     	Scanner arquivo = null;
@@ -92,7 +89,6 @@ public class App {
     		
     		numProdutos = Integer.parseInt(arquivo.nextLine());
     		
-            // TAREFA 1: Carregando em uma árvore AVL (polimorfismo)
     		produtosCadastrados = new AVL<K, Produto>();
     		
     		System.out.println("Carregando " + numProdutos + " produtos em uma estrutura AVL...");
@@ -200,10 +196,7 @@ public class App {
              return null;
          }
     }
-    
-    /**
-     * TAREFA 4: Método genérico para auxiliar o recorte
-     */
+
     private static <K> void executarRecorte(ABB<K, Produto> produtosCadastrados, K min, K max, String tipo) {
         if (produtosCadastrados == null) {
             System.out.println("A lista de produtos por " + tipo + " não foi carregada.");
@@ -223,9 +216,6 @@ public class App {
         }
     }
 
-    /**
-     * TAREFA 3: Recorte por Nome
-     */
     private static void recortarProdutosNome(ABB<String, Produto> produtosCadastrados) {
      	cabecalho();
         System.out.println("--- Recorte por Nome ---");
@@ -237,9 +227,6 @@ public class App {
         executarRecorte(produtosCadastrados, inicio, fim, "Nome");
      }
      
-    /**
-     * TAREFA 4: Recorte por ID
-     */
     private static void recortarProdutosId(ABB<Integer, Produto> produtosCadastrados) {
      	cabecalho();
         System.out.println("--- Recorte por ID ---");

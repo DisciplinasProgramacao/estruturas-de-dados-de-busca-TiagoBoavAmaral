@@ -179,10 +179,6 @@ public class ABB<K, V> implements IMapeamento<K, V>{
         return raizArvore;
     }
 
-    /**
-     * TAREFA 2: Implementação do método recortar.
-     * Retorna uma lista com os itens cujas chaves estão no intervalo [chaveDeOnde, chaveAteOnde].
-     */
     public Lista<V> recortar(K chaveDeOnde, K chaveAteOnde) {
         Lista<V> listaResultado = new Lista<>();
         recortar(raiz, chaveDeOnde, chaveAteOnde, listaResultado);
