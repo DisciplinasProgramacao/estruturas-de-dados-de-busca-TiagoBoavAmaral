@@ -1,8 +1,15 @@
-public class Lista<E> {
+import java.util.NoSuchElementException;
+import java.util.function.Function;
+import java.util.function.Predicate;
+
+public class Lista<E> implements IMedicao {
 
 	private Celula<E> primeiro;
 	private Celula<E> ultimo;
 	private int tamanho;
+	private long comparacoes;
+	private long inicio;
+	private long termino;
 	
 	public Lista() {
 		
@@ -16,15 +23,6 @@ public class Lista<E> {
 		
 		return (this.primeiro == this.ultimo);
 	}
-	
-	public void inserir(E novo) {
-		
-		Celula<E> novaCelula = new Celula<E>(novo);
-		
-		ultimo.setProximo(novaCelula);
-		ultimo = ultimo.getProximo();
-		tamanho++;
-	} 
 	
 	public void inserir(E novo, int posicao) {
 		
@@ -51,24 +49,22 @@ public class Lista<E> {
 		this.tamanho++;		
 	}
 	
-	public E remover(int posicao) {
+	public void inserirFinal(E novo) {
 		
-		Celula<E> anterior, celulaRemovida, proximaCelula;
+		Celula<E> novaCelula = new Celula<>(novo);
 		
-		if (vazia())
-			throw new IllegalStateException("Não foi possível remover o item da lista: "
-					+ "a lista está vazia!");
+		this.ultimo.setProximo(novaCelula);
+		this.ultimo = novaCelula;
 		
-		if ((posicao < 0) || (posicao >= this.tamanho ))
-			throw new IndexOutOfBoundsException("Não foi possível remover o item da lista: "
-					+ "a posição informada é inválida!");
-			
-		anterior = this.primeiro;
-		for (int i = 0; i < posicao; i++)
-			anterior = anterior.getProximo();
-				
+		this.tamanho++;
+	}
+	
+	private E removerProxima(Celula<E> anterior) {
+		
+		Celula<E> celulaRemovida, proximaCelula;
+		
 		celulaRemovida = anterior.getProximo();
-				
+		
 		proximaCelula = celulaRemovida.getProximo();
 				
 		anterior.setProximo(proximaCelula);
@@ -82,21 +78,135 @@ public class Lista<E> {
 		return (celulaRemovida.getItem());	
 	}
 	
+	public E remover(int posicao) {
+		
+		Celula<E> anterior;
+		
+		if (vazia())
+			throw new IllegalStateException("Não foi possível remover o item da lista: "
+					+ "a lista está vazia!");
+		
+		if ((posicao < 0) || (posicao >= this.tamanho ))
+			throw new IndexOutOfBoundsException("Não foi possível remover o item da lista: "
+					+ "a posição informada é inválida!");
+			
+		anterior = this.primeiro;
+		for (int i = 0; i < posicao; i++)
+			anterior = anterior.getProximo();
+				
+		return (removerProxima(anterior));
+	}
+	
+	public E remover(E elemento) {
+		
+		Celula<E> anterior;
+		
+		if (vazia())
+			throw new IllegalStateException("Não foi possível remover o item da lista: "
+					+ "a lista está vazia!");
+		
+		anterior = this.primeiro;
+		while ((anterior.getProximo() != null) && !(anterior.getProximo().getItem().equals(elemento)))
+			anterior = anterior.getProximo();
+		
+		if (anterior.getProximo() == null)
+			throw new NoSuchElementException("Item não encontrado!");
+		else {
+			return (removerProxima(anterior));
+		}
+	}
+	
+	public E pesquisar(E procurado) {
+		
+		Celula<E> aux;
+		comparacoes = 0;
+		inicio = System.nanoTime();
+		
+		aux = this.primeiro.getProximo();
+		
+		while (aux != null) {
+			comparacoes++;
+			if (aux.getItem().equals(procurado)) {
+				termino = System.nanoTime();
+				return aux.getItem();
+			}
+			aux = aux.getProximo();
+		}
+		
+		throw new NoSuchElementException("Item não encontrado!");
+	}
+	
 	@Override
 	public String toString() {
 		
 		Celula<E> aux;
-		StringBuilder listaString = new StringBuilder();
+		String listaString = "A lista está vazia!\n";
 		
-		if (vazia())
-			 return ("A lista está vazia!");
-		else {
+		if (!vazia()) {
+			listaString = "";
+		
 			aux = this.primeiro.getProximo();
+		
 			while (aux != null) {
-				listaString.append(aux.getItem() + "\n");
+				listaString += aux.getItem() + "\n";
 				aux = aux.getProximo();
 			}
-			return listaString.toString();
-		} 	
+		}
+		return listaString;
+	}
+	
+	/**
+     * Conta quantos elementos da lista atendem à condição estabelecida pelo predicado.
+     * @param condicional Predicado com a condição para verificação de elementos da lista
+     * @return inteiro com a quantidade de elementos que atendem ao predicado (inteiro não-negativo)
+     */
+    public int contarRepeticoes(Predicate<E> condicional){
+        
+    	int repeticoes = 0;
+    	Celula<E> aux = primeiro.getProximo();
+    	
+    	while (aux != null) {
+    		if (condicional.test(aux.getItem())) {
+    			repeticoes++;
+    		}
+    		aux = aux.getProximo();
+    	}
+    	return repeticoes;
+	}
+    
+    /**
+   	 * Calcula e retorna o valor total de um determinado atributo dos elementos da lista,
+   	 * utilizando uma função de extração fornecida.
+   	 * @param extrator uma função que extrai um valor numérico (Double) de cada elemento da lista.
+   	 * @return o valor total dos atributos extraídos dos elementos.
+   	 */
+   	public double calcularValorTotal(Function<E, Double> extrator) {
+   	
+   		Celula<E> aux;
+   		double soma = 0;
+   		
+   		if (vazia())
+			throw new IllegalStateException("A lista está vazia!");
+		
+   		aux = primeiro.getProximo();
+   		while (aux != null) {
+   			soma += extrator.apply(aux.getItem());
+   			aux = aux.getProximo();
+   		}
+   		return (soma);
+   	}
+   	
+	public int tamanho() {
+		return tamanho;
+	}
+
+	@Override
+	public long getComparacoes() {
+		return comparacoes;
+	}
+
+	@Override
+	public double getTempo() {
+		return (termino - inicio) / 1_000_000;
 	}
 }
