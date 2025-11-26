@@ -1,4 +1,5 @@
 import java.util.Comparator;
+import java.util.function.Function;
 
 public class AVL<K, V> extends ABB<K, V> {
 
@@ -14,6 +15,10 @@ public class AVL<K, V> extends ABB<K, V> {
     	super(comparador);
     }
     
+    public AVL(AVL<?, V> original, Function<V, K> funcaoChave, Comparator<K> comparador) {
+    	super(original, funcaoChave, comparador);
+    }
+       
     /**
     * Método recursivo responsável por adicionar um item à árvore.
     * @param raizArvore: raiz da árvore ou sub-árvore em que o item será adicionado.

@@ -1,14 +1,17 @@
 import java.nio.charset.Charset;
+import java.time.LocalDate;
 import java.util.NoSuchElementException;
+import java.util.Random;
 import java.util.Scanner;
 import java.util.function.Function;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 
 public class App {
 
-	/** Nome do arquivo de dados. O arquivo deve estar localizado na raiz do projeto */
+    /** Nome do arquivo de dados. O arquivo deve estar localizado na raiz do projeto */
     static String nomeArquivoDados;
     
     /** Scanner para leitura de dados do teclado */
@@ -17,13 +20,11 @@ public class App {
     /** Quantidade de produtos cadastrados atualmente na lista */
     static int quantosProdutos = 0;
 
-    // Embora o tipo declarado seja ABB, instanciamos como AVL para aproveitar o polimorfismo
-    static ABB<String, Produto> produtosCadastradosPorNome;
-    static ABB<Integer, Produto> produtosCadastradosPorId;
-    
-    // Variáveis específicas para AVL (não estritamente necessárias se usarmos polimorfismo acima, mas mantidas conforme original)
     static AVL<String, Produto> produtosBalanceadosPorNome;
+    
     static AVL<Integer, Produto> produtosBalanceadosPorId;
+    
+    static TabelaHash<Produto, Lista<Pedido>> pedidosPorProduto;
     
     static void limparTela() {
         System.out.print("\033[H\033[2J");
@@ -44,121 +45,104 @@ public class App {
    
     static <T extends Number> T lerOpcao(String mensagem, Class<T> classe) {
         
-    	T valor;
+        T valor;
         
-    	System.out.println(mensagem);
-    	try {
+        System.out.println(mensagem);
+        try {
             valor = classe.getConstructor(String.class).newInstance(teclado.nextLine());
         } catch (InstantiationException | IllegalAccessException | IllegalArgumentException 
-        		| InvocationTargetException | NoSuchMethodException | SecurityException e) {
+                | InvocationTargetException | NoSuchMethodException | SecurityException e) {
             return null;
         }
         return valor;
     }
     
+    /** * Imprime o menu principal, lê a opção do usuário e a retorna (int).
+     * Modificado para Tarefa 4 (Robustez): Trata exceção caso usuário digite texto.
+     */
     static int menu() {
         cabecalho();
-        System.out.println("1 - Carregar produtos por nome/descrição (AVL)");
-        System.out.println("2 - Carregar produtos por id (AVL)");
-        System.out.println("3 - Procurar produto, por nome");
-        System.out.println("4 - Procurar produto, por id");
-        System.out.println("5 - Remover produto, por nome");
-        System.out.println("6 - Remover produto, por id");
-        System.out.println("7 - Recortar a lista de produtos, por nome");
-        System.out.println("8 - Recortar a lista de produtos, por id");
+        System.out.println("1 - Procurar produto, por id");
+        System.out.println("2 - Gravar, em arquivo, pedidos de um produto");
         System.out.println("0 - Sair");
         System.out.print("Digite sua opção: ");
+        
         try {
             return Integer.parseInt(teclado.nextLine());
         } catch (NumberFormatException e) {
-            return -1;
+            return -1; // Retorna opção inválida
         }
     }
     
-    static <K> ABB<K, Produto> lerProdutos(String nomeArquivoDados, Function<Produto, K> extratorDeChave) {
-    	
-    	Scanner arquivo = null;
-    	int numProdutos;
-    	String linha;
-    	Produto produto;
-    	ABB<K, Produto> produtosCadastrados; // Declara como ABB, mas instanciaremos AVL
-    	K chave;
-    	
-    	try {
-    		arquivo = new Scanner(new File(nomeArquivoDados), Charset.forName("UTF-8"));
-    		
-    		numProdutos = Integer.parseInt(arquivo.nextLine());
-    		
-    		produtosCadastrados = new AVL<K, Produto>();
-    		
-    		System.out.println("Carregando " + numProdutos + " produtos em uma estrutura AVL...");
-            long inicio = System.nanoTime();
-
-    		for (int i = 0; i < numProdutos; i++) {
-    			linha = arquivo.nextLine();
-    			produto = Produto.criarDoTexto(linha);
-    			chave = extratorDeChave.apply(produto);
-    			produtosCadastrados.inserir(chave, produto);
-    		}
-            long fim = System.nanoTime();
-            System.out.println("Tempo de carregamento: " + (fim - inicio)/1_000_000.0 + " ms.");
-
-    		quantosProdutos = numProdutos;
-    		
-    	} catch (IOException excecaoArquivo) {
-            System.out.println("Erro ao ler o arquivo: " + excecaoArquivo.getMessage());
-    		produtosCadastrados = null;
-    	} finally {
+    /**
+     * Lê os dados de um arquivo-texto e retorna uma árvore de produtos.
+     */
+    static <K> AVL<K, Produto> lerProdutos(String nomeArquivoDados, Function<Produto, K> extratorDeChave) {
+        
+        Scanner arquivo = null;
+        int numProdutos;
+        String linha;
+        Produto produto;
+        AVL<K, Produto> produtosCadastrados;
+        K chave;
+        
+        try {
+            arquivo = new Scanner(new File(nomeArquivoDados), Charset.forName("UTF-8"));
+            
+            numProdutos = Integer.parseInt(arquivo.nextLine());
+            produtosCadastrados = new AVL<K, Produto>();
+            
+            for (int i = 0; i < numProdutos; i++) {
+                linha = arquivo.nextLine();
+                produto = Produto.criarDoTexto(linha);
+                chave = extratorDeChave.apply(produto);
+                produtosCadastrados.inserir(chave, produto);
+            }
+            quantosProdutos = numProdutos;
+            
+        } catch (IOException excecaoArquivo) {
+            produtosCadastrados = null;
+        } finally {
             if (arquivo != null) arquivo.close();
-    	}
-    	
-    	return produtosCadastrados;
+        }
+        
+        return produtosCadastrados;
     }
     
     static <K> Produto localizarProduto(ABB<K, Produto> produtosCadastrados, K procurado) {
-    	
-    	Produto produto;
-    	
-    	cabecalho();
-    	System.out.println("Localizando um produto...");
-    	
-    	try {
-    		produto = produtosCadastrados.pesquisar(procurado);
-    	} catch (NoSuchElementException excecao) {
-    		produto = null;
-    	}
-    	
-    	System.out.println("Número de comparações realizadas: " + produtosCadastrados.getComparacoes());
-    	System.out.println("Tempo de processamento da pesquisa: " + produtosCadastrados.getTempo() + " ms");
         
-    	return produto;
-    	
+        Produto produto;
+        
+        cabecalho();
+        System.out.println("Localizando um produto...");
+        
+        try {
+            produto = produtosCadastrados.pesquisar(procurado);
+        } catch (NoSuchElementException excecao) {
+            produto = null;
+        }
+        
+        System.out.println("Número de comparações realizadas: " + produtosCadastrados.getComparacoes());
+        System.out.println("Tempo de processamento da pesquisa: " + produtosCadastrados.getTempo() + " ms");
+        
+        return produto;
     }
     
     static Produto localizarProdutoID(ABB<Integer, Produto> produtosCadastrados) {
-        if (produtosCadastrados == null) {
-            System.out.println("Carregue os produtos por ID (Opção 2) primeiro.");
-            return null;
-        }
-        int idProduto = lerOpcao("Digite o identificador do produto desejado: ", Integer.class);
+        Integer idProduto = lerOpcao("Digite o identificador do produto desejado: ", Integer.class);
+        if (idProduto == null) return null; // Robustez extra se lerOpcao falhar
         return localizarProduto(produtosCadastrados, idProduto);
     }
     
     static Produto localizarProdutoNome(ABB<String, Produto> produtosCadastrados) {
-        if (produtosCadastrados == null) {
-            System.out.println("Carregue os produtos por Nome (Opção 1) primeiro.");
-            return null;
-        }
-    	String descricao;
-    	System.out.println("Digite o nome ou a descrição do produto desejado:");
-        descricao = teclado.nextLine();
+        System.out.println("Digite o nome ou a descrição do produto desejado:");
+        String descricao = teclado.nextLine();
         return localizarProduto(produtosCadastrados, descricao);
     }
     
     private static void mostrarProduto(Produto produto) {
-    	
         cabecalho();
-        String mensagem = "Produto não encontrado ou dados inválidos!";
+        String mensagem = "Dados inválidos para o produto ou produto não encontrado!";
         
         if (produto != null){
             mensagem = String.format("Dados do produto:\n%s", produto);
@@ -167,99 +151,116 @@ public class App {
         System.out.println(mensagem);
     }
     
-    static Produto removerProdutoId(ABB<Integer, Produto> produtosCadastrados) {
-         if (produtosCadastrados == null) return null;
-         cabecalho();
-         System.out.println("Localizando o produto por id para remoção");
-         int id = lerOpcao("Digite o id do produto que deve ser removido", Integer.class);
-         Produto localizado =  removerProduto(produtosCadastrados, id);
-         return localizado;
+    private static Lista<Pedido> gerarPedidos(int quantidade) {
+        Lista<Pedido> pedidos = new Lista<>();
+        Random sorteio = new Random(42);
+        int quantProdutos;
+        int formaDePagamento;
+        for (int i = 0; i < quantidade; i++) {
+            formaDePagamento = sorteio.nextInt(2) + 1;
+            Pedido pedido = new Pedido(LocalDate.now(), formaDePagamento);
+            quantProdutos = sorteio.nextInt(8) + 1;
+            for (int j = 0; j < quantProdutos; j++) {
+                int id = sorteio.nextInt(7750) + 10_000;
+                try {
+                    Produto produto = produtosBalanceadosPorId.pesquisar(id);
+                    pedido.incluirProduto(produto);
+                    inserirNaTabela(produto, pedido);
+                } catch (NoSuchElementException e) {
+                    // Ignora se o ID sorteado não existir na árvore (apenas robustez para o gerador)
+                }
+            }
+            pedidos.inserirFinal(pedido);
+        }
+        return pedidos;
     }
-
-    static Produto removerProdutoNome(ABB<String, Produto> produtosCadastrados) {
-        if (produtosCadastrados == null) return null;
-    	String descricao;
-    	cabecalho();
-        System.out.println("Localizando o produto por nome para remoção");
-        System.out.print("Digite a descrição do produto que deve ser removido: ");
-        descricao = teclado.nextLine();
-        Produto localizado =  removerProduto(produtosCadastrados, descricao);
-        return localizado;
+    
+    /**
+     * Tarefa 2: Método para inserir o pedido na tabela hash mapeada pelo produto.
+     * Se a lista de pedidos para aquele produto não existir, ela é criada.
+     */
+    private static void inserirNaTabela(Produto produto, Pedido pedido) {
+        
+        Lista<Pedido> listaDePedidos;
+        
+        try {
+            listaDePedidos = pedidosPorProduto.pesquisar(produto);
+        } catch (NoSuchElementException excecao) {
+            listaDePedidos = new Lista<>();
+            pedidosPorProduto.inserir(produto, listaDePedidos);
+        }
+        listaDePedidos.inserirFinal(pedido);
     }
-
-    static <K> Produto removerProduto(ABB<K, Produto> produtosCadastrados, K chave){
-         cabecalho();
-         try {
-             Produto localizado =  produtosCadastrados.remover(chave);
-             return localizado;
-         } catch(NoSuchElementException e) {
-             return null;
-         }
-    }
-
-    private static <K> void executarRecorte(ABB<K, Produto> produtosCadastrados, K min, K max, String tipo) {
-        if (produtosCadastrados == null) {
-            System.out.println("A lista de produtos por " + tipo + " não foi carregada.");
+    
+    /**
+     * Tarefa 3 e 4: Gera relatório em arquivo e implementa robustez.
+     */
+    static void pedidosDoProduto() {
+        
+        // Tarefa 4: Robustez - Verifica se o produto existe antes de tentar gerar relatório
+        Produto produto = localizarProdutoID(produtosBalanceadosPorId);
+        
+        if (produto == null) {
+            System.out.println("Operação cancelada: Produto não encontrado.");
             return;
         }
         
-        System.out.println("Recortando produtos por " + tipo + " entre " + min + " e " + max + "...");
+        Lista<Pedido> listaDePedidos;
+        String nomeArquivo = "RelatorioProduto" + produto.hashCode() + ".txt";  
+        
         try {
-            Lista<Produto> resultado = produtosCadastrados.recortar(min, max);
-            if (resultado.vazia()) {
-                System.out.println("Nenhum produto encontrado neste intervalo.");
-            } else {
-                System.out.println(resultado.toString());
+            // Tenta buscar os pedidos na Tabela Hash
+            listaDePedidos = pedidosPorProduto.pesquisar(produto);
+            
+            // Gravação do arquivo usando try-with-resources para garantir o fechamento
+            try (FileWriter arquivoRelatorio = new FileWriter(nomeArquivo, Charset.forName("UTF-8"))) {
+                arquivoRelatorio.write("RELATÓRIO DE PEDIDOS\n");
+                arquivoRelatorio.write("Produto consultado: " + produto.toString() + "\n");
+                arquivoRelatorio.write("==================================================\n");
+                arquivoRelatorio.write(listaDePedidos.toString() + "\n");
+                
+                System.out.println("Sucesso! O relatório foi salvo no arquivo: " + nomeArquivo);
+            } catch(IOException excecao) {
+                System.out.println("Erro ao gravar o arquivo " + nomeArquivo + ": " + excecao.getMessage());        	
             }
-        } catch (Exception e) {
-            System.out.println("Erro ao recortar: " + e.getMessage());
-        }
-    }
-
-    private static void recortarProdutosNome(ABB<String, Produto> produtosCadastrados) {
-     	cabecalho();
-        System.out.println("--- Recorte por Nome ---");
-        System.out.println("Digite o início do intervalo (texto): ");
-        String inicio = teclado.nextLine();
-        System.out.println("Digite o fim do intervalo (texto): ");
-        String fim = teclado.nextLine();
-        
-        executarRecorte(produtosCadastrados, inicio, fim, "Nome");
-     }
-     
-    private static void recortarProdutosId(ABB<Integer, Produto> produtosCadastrados) {
-     	cabecalho();
-        System.out.println("--- Recorte por ID ---");
-        Integer inicio = lerOpcao("Digite o ID inicial: ", Integer.class);
-        Integer fim = lerOpcao("Digite o ID final: ", Integer.class);
-        
-        if (inicio != null && fim != null) {
-            executarRecorte(produtosCadastrados, inicio, fim, "ID");
-        } else {
-            System.out.println("IDs inválidos.");
+            
+        } catch (NoSuchElementException e) {
+            // Tarefa 4: Robustez - Produto existe no cadastro, mas não foi vendido em nenhum pedido
+            System.out.println("Atenção: Nenhum pedido encontrado contendo este produto.");
         }
     }
     
-	public static void main(String[] args) {
-		teclado = new Scanner(System.in, Charset.forName("UTF-8"));
+    public static void main(String[] args) {
+        teclado = new Scanner(System.in, Charset.forName("UTF-8"));
         nomeArquivoDados = "produtos.txt";
         
+        produtosBalanceadosPorId = lerProdutos(nomeArquivoDados, Produto::hashCode);
+        
+        // Verifica se a leitura do arquivo funcionou antes de continuar
+        if (produtosBalanceadosPorId == null) {
+            System.out.println("Erro crítico: Não foi possível ler o arquivo " + nomeArquivoDados);
+            System.out.println("Verifique se o arquivo está na raiz do projeto.");
+            return;
+        }
+
+        produtosBalanceadosPorNome = new AVL<>(produtosBalanceadosPorId, produto -> produto.descricao, String::compareTo);
+        pedidosPorProduto = new TabelaHash<>((int)(quantosProdutos * 1.25));
+        
+        System.out.println("Gerando pedidos aleatórios...");
+        gerarPedidos(25_000); // Tarefa 1/2 implícita
+       
         int opcao = -1;
       
-        do{
+        do {
             opcao = menu();
             switch (opcao) {
-            	case 1 -> produtosCadastradosPorNome = lerProdutos(nomeArquivoDados, (p -> p.descricao));
-            	case 2 -> produtosCadastradosPorId = lerProdutos(nomeArquivoDados, (p -> p.idProduto));
-            	case 3 -> mostrarProduto(localizarProdutoNome(produtosCadastradosPorNome));
-            	case 4 -> mostrarProduto(localizarProdutoID(produtosCadastradosPorId));
-            	case 5 -> mostrarProduto(removerProdutoNome(produtosCadastradosPorNome));
-            	case 6 -> mostrarProduto(removerProdutoId(produtosCadastradosPorId));
-            	case 7 -> recortarProdutosNome(produtosCadastradosPorNome); 
-            	case 8 -> recortarProdutosId(produtosCadastradosPorId); 
+                case 1 -> mostrarProduto(localizarProdutoID(produtosBalanceadosPorId));
+                case 2 -> pedidosDoProduto();
+                case 0 -> System.out.println("Saindo...");
+                default -> System.out.println("Opção inválida!");
             }
             if (opcao != 0) pausa();
-        }while(opcao != 0);       
+        } while(opcao != 0);       
 
         teclado.close();    
     }

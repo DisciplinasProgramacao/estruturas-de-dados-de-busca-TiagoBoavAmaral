@@ -1,0 +1,105 @@
+RELATÓRIO DE PEDIDOS
+Produto consultado: ID: 10003 NOME: Cola Azul marinho: R$ 4,03
+==================================================
+Número do pedido: 537
+Data do pedido: 26/11/2025
+Pedido com 2 produtos.
+Produtos no pedido:
+ID: 11122 NOME: Calculadora Azul cobalto: R$ 2,81
+ID: 10003 NOME: Cola Azul marinho: R$ 4,03
+Pedido pago parcelado.
+Valor total do pedido: R$ 6,84
+
+Número do pedido: 6142
+Data do pedido: 26/11/2025
+Pedido com 1 produtos.
+Produtos no pedido:
+ID: 10003 NOME: Cola Azul marinho: R$ 4,03
+Pedido pago parcelado.
+Valor total do pedido: R$ 4,03
+
+Número do pedido: 8979
+Data do pedido: 26/11/2025
+Pedido com 5 produtos.
+Produtos no pedido:
+ID: 12238 NOME: Grampo Salmao claro: R$ 11,70
+ID: 14092 NOME: Cola Jasmine: R$ 2,69
+ID: 11306 NOME: Cola em bastao Marrom claro: R$ 5,05
+ID: 10003 NOME: Cola Azul marinho: R$ 4,03
+ID: 16881 NOME: Pasta de papel Castanho claro: R$ 8,07
+Pedido pago à vista. Percentual de desconto: 15,00%
+Valor total do pedido: R$ 26,81
+
+Número do pedido: 12661
+Data do pedido: 26/11/2025
+Pedido com 1 produtos.
+Produtos no pedido:
+ID: 10003 NOME: Cola Azul marinho: R$ 4,03
+Pedido pago à vista. Percentual de desconto: 15,00%
+Valor total do pedido: R$ 3,43
+
+Número do pedido: 16469
+Data do pedido: 26/11/2025
+Pedido com 6 produtos.
+Produtos no pedido:
+ID: 10003 NOME: Cola Azul marinho: R$ 4,03
+ID: 13080 NOME: Caneta-tinteiro Ocre: R$ 4,36
+ID: 16636 NOME: Caneta esferografica Coral claro: R$ 3,61
+ID: 11695 NOME: Cartao de papel Turquesa media: R$ 7,41
+ID: 13305 NOME: Elastico Fucsia: R$ 2,53
+ID: 13793 NOME: Liquido de correcao Ametista: R$ 5,46
+Pedido pago à vista. Percentual de desconto: 15,00%
+Valor total do pedido: R$ 23,29
+
+Número do pedido: 17044
+Data do pedido: 26/11/2025
+Pedido com 6 produtos.
+Produtos no pedido:
+ID: 16065 NOME: Papel cartao Turquesa: R$ 8,82
+ID: 14653 NOME: Lapis Kiwi: R$ 3,20
+ID: 10003 NOME: Cola Azul marinho: R$ 4,03
+ID: 15084 NOME: Fita de correcao Branco: R$ 4,37
+ID: 14804 NOME: Lapiseira Rosa: R$ 9,60
+ID: 15489 NOME: Etiqueta pequena Lilas: R$ 10,82
+Pedido pago parcelado.
+Valor total do pedido: R$ 40,85
+
+Número do pedido: 22538
+Data do pedido: 26/11/2025
+Pedido com 6 produtos.
+Produtos no pedido:
+ID: 11814 NOME: Tesoura Gris: R$ 4,25
+ID: 17696 NOME: Lapiseira Mostarda: R$ 12,48
+ID: 11027 NOME: Peso de papel Orquidea: R$ 8,62
+ID: 12132 NOME: Peso de papel Preto: R$ 7,41
+ID: 10003 NOME: Cola Azul marinho: R$ 4,03
+ID: 17450 NOME: Cartao de papel Amarelo escuro: R$ 6,58
+Pedido pago parcelado.
+Valor total do pedido: R$ 43,36
+
+Número do pedido: 24173
+Data do pedido: 26/11/2025
+Pedido com 4 produtos.
+Produtos no pedido:
+ID: 10003 NOME: Cola Azul marinho: R$ 4,03
+ID: 10393 NOME: Lapis de cor Rosa choque: R$ 5,15
+ID: 16783 NOME: Fita de correcao Linho: R$ 8,16
+ID: 15603 NOME: Papel quadriculado Goiaba: R$ 9,56
+Pedido pago parcelado.
+Valor total do pedido: R$ 26,90
+
+Número do pedido: 24334
+Data do pedido: 26/11/2025
+Pedido com 7 produtos.
+Produtos no pedido:
+ID: 10003 NOME: Cola Azul marinho: R$ 4,03
+ID: 10308 NOME: Post-its Laranja claro: R$ 2,33
+ID: 11931 NOME: Bloco com pauta Amarelo: R$ 6,24
+ID: 13067 NOME: Pasta de papel Verde oliva: R$ 8,44
+ID: 16606 NOME: Apontador Turquesa media: R$ 4,53
+ID: 16255 NOME: Pasta de plastico Laranja escuro: R$ 7,82
+ID: 13420 NOME: Alfinete Goiaba: R$ 3,96
+Pedido pago à vista. Percentual de desconto: 15,00%
+Valor total do pedido: R$ 31,74
+
+
