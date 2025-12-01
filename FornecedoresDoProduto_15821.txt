@@ -1,0 +1,9 @@
+RELATÓRIO DE FORNECEDORES
+Produto: ID: 15821 NOME: Clipe Goiaba: R$ 5,76
+========================================
+Fornecedor: Eco Supply Material Escolar | Documento: 10230
+Produtos fornecidos:
+ID: 15821 NOME: Clipe Goiaba: R$ 5,76
+ID: 16065 NOME: Papel cartao Turquesa: R$ 8,82
+ID: 14371 NOME: Pasta de papel Verde lima: R$ 5,41
+
