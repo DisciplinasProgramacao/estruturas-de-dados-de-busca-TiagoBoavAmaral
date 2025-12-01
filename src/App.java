@@ -11,43 +11,36 @@ import java.lang.reflect.InvocationTargetException;
 
 public class App {
 
-    /** Nome do arquivo de dados. O arquivo deve estar localizado na raiz do projeto */
     static String nomeArquivoDados;
-    
-    /** Scanner para leitura de dados do teclado */
     static Scanner teclado;
-
-    /** Quantidade de produtos cadastrados atualmente na lista */
     static int quantosProdutos = 0;
 
+
     static AVL<String, Produto> produtosBalanceadosPorNome;
-    
     static AVL<Integer, Produto> produtosBalanceadosPorId;
-    
     static TabelaHash<Produto, Lista<Pedido>> pedidosPorProduto;
+
+    static AVL<Integer, Fornecedor> fornecedoresPorID;
+    static TabelaHash<Produto, Lista<Fornecedor>> fornecedoresDoProduto;
     
     static void limparTela() {
         System.out.print("\033[H\033[2J");
         System.out.flush();
     }
 
-    /** Gera um efeito de pausa na CLI. Espera por um enter para continuar */
     static void pausa() {
-        System.out.println("Digite enter para continuar...");
+        System.out.println("\nDigite enter para continuar...");
         teclado.nextLine();
     }
 
-    /** Cabeçalho principal da CLI do sistema */
     static void cabecalho() {
         System.out.println("AEDs II COMÉRCIO DE COISINHAS");
         System.out.println("=============================");
     }
    
     static <T extends Number> T lerOpcao(String mensagem, Class<T> classe) {
-        
         T valor;
-        
-        System.out.println(mensagem);
+        System.out.print(mensagem);
         try {
             valor = classe.getConstructor(String.class).newInstance(teclado.nextLine());
         } catch (InstantiationException | IllegalAccessException | IllegalArgumentException 
@@ -57,28 +50,23 @@ public class App {
         return valor;
     }
     
-    /** * Imprime o menu principal, lê a opção do usuário e a retorna (int).
-     * Modificado para Tarefa 4 (Robustez): Trata exceção caso usuário digite texto.
-     */
     static int menu() {
         cabecalho();
         System.out.println("1 - Procurar produto, por id");
-        System.out.println("2 - Gravar, em arquivo, pedidos de um produto");
+        System.out.println("2 - Relatório: Pedidos de um produto (Arquivo)");
+        System.out.println("3 - Relatório: Dados de um Fornecedor (Tela)"); 
+        System.out.println("4 - Relatório: Fornecedores de um Produto (Arquivo)"); 
         System.out.println("0 - Sair");
         System.out.print("Digite sua opção: ");
         
         try {
             return Integer.parseInt(teclado.nextLine());
         } catch (NumberFormatException e) {
-            return -1; // Retorna opção inválida
+            return -1;
         }
     }
     
-    /**
-     * Lê os dados de um arquivo-texto e retorna uma árvore de produtos.
-     */
     static <K> AVL<K, Produto> lerProdutos(String nomeArquivoDados, Function<Produto, K> extratorDeChave) {
-        
         Scanner arquivo = null;
         int numProdutos;
         String linha;
@@ -88,7 +76,6 @@ public class App {
         
         try {
             arquivo = new Scanner(new File(nomeArquivoDados), Charset.forName("UTF-8"));
-            
             numProdutos = Integer.parseInt(arquivo.nextLine());
             produtosCadastrados = new AVL<K, Produto>();
             
@@ -105,50 +92,87 @@ public class App {
         } finally {
             if (arquivo != null) arquivo.close();
         }
-        
         return produtosCadastrados;
+    }
+
+    static <K> AVL<K, Fornecedor> lerFornecedores(String nomeArquivo, Function<Fornecedor, K> extratorDeChave) {
+        Scanner arquivo = null;
+        AVL<K, Fornecedor> arvoreFornecedores = new AVL<>();
+        Random sorteio = new Random(42); 
+
+        try {
+            arquivo = new Scanner(new File(nomeArquivo), Charset.forName("UTF-8"));
+            int qtdFornecedores = Integer.parseInt(arquivo.nextLine()); 
+
+            for (int i = 0; i < qtdFornecedores; i++) {
+                String nome = arquivo.nextLine();
+                try {
+                    Fornecedor novoFornecedor = new Fornecedor(nome);
+                    int qtdProdutos = sorteio.nextInt(7);
+                    
+                    for (int j = 0; j < qtdProdutos; j++) {
+                        int idSorteado = 10_000 + sorteio.nextInt(quantosProdutos);
+                        
+                        try {
+                            Produto prod = produtosBalanceadosPorId.pesquisar(idSorteado);
+                            
+                            novoFornecedor.adicionarProduto(prod);
+
+                            Lista<Fornecedor> listaFornecedores;
+                            try {
+                                listaFornecedores = fornecedoresDoProduto.pesquisar(prod);
+                            } catch (NoSuchElementException e) {
+                                listaFornecedores = new Lista<>();
+                                fornecedoresDoProduto.inserir(prod, listaFornecedores);
+                            }
+                            listaFornecedores.inserirFinal(novoFornecedor);
+
+                        } catch (NoSuchElementException e) {
+                        }
+                    }
+
+
+                    K chave = extratorDeChave.apply(novoFornecedor);
+                    arvoreFornecedores.inserir(chave, novoFornecedor);
+
+                } catch (IllegalArgumentException e) {
+                    System.out.println("Erro ao criar fornecedor '" + nome + "': " + e.getMessage());
+                }
+            }
+
+        } catch (IOException e) {
+            System.out.println("Erro ao ler arquivo de fornecedores: " + e.getMessage());
+            return null;
+        } finally {
+            if (arquivo != null) arquivo.close();
+        }
+
+        return arvoreFornecedores;
     }
     
     static <K> Produto localizarProduto(ABB<K, Produto> produtosCadastrados, K procurado) {
-        
         Produto produto;
-        
         cabecalho();
-        System.out.println("Localizando um produto...");
-        
+        System.out.println("Localizando produto...");
         try {
             produto = produtosCadastrados.pesquisar(procurado);
+            System.out.println("Produto encontrado: " + produto.toString());
         } catch (NoSuchElementException excecao) {
             produto = null;
+            System.out.println("Produto não encontrado.");
         }
-        
-        System.out.println("Número de comparações realizadas: " + produtosCadastrados.getComparacoes());
-        System.out.println("Tempo de processamento da pesquisa: " + produtosCadastrados.getTempo() + " ms");
-        
         return produto;
     }
     
     static Produto localizarProdutoID(ABB<Integer, Produto> produtosCadastrados) {
-        Integer idProduto = lerOpcao("Digite o identificador do produto desejado: ", Integer.class);
-        if (idProduto == null) return null; // Robustez extra se lerOpcao falhar
+        Integer idProduto = lerOpcao("Digite o ID do produto: ", Integer.class);
+        if (idProduto == null) return null;
         return localizarProduto(produtosCadastrados, idProduto);
     }
     
-    static Produto localizarProdutoNome(ABB<String, Produto> produtosCadastrados) {
-        System.out.println("Digite o nome ou a descrição do produto desejado:");
-        String descricao = teclado.nextLine();
-        return localizarProduto(produtosCadastrados, descricao);
-    }
-    
     private static void mostrarProduto(Produto produto) {
-        cabecalho();
-        String mensagem = "Dados inválidos para o produto ou produto não encontrado!";
-        
-        if (produto != null){
-            mensagem = String.format("Dados do produto:\n%s", produto);
-        }
-        
-        System.out.println(mensagem);
+
+        if(produto == null) System.out.println("Operação cancelada.");
     }
     
     private static Lista<Pedido> gerarPedidos(int quantidade) {
@@ -161,28 +185,20 @@ public class App {
             Pedido pedido = new Pedido(LocalDate.now(), formaDePagamento);
             quantProdutos = sorteio.nextInt(8) + 1;
             for (int j = 0; j < quantProdutos; j++) {
-                int id = sorteio.nextInt(7750) + 10_000;
+                int id = sorteio.nextInt(quantosProdutos) + 10_000;
                 try {
                     Produto produto = produtosBalanceadosPorId.pesquisar(id);
                     pedido.incluirProduto(produto);
                     inserirNaTabela(produto, pedido);
-                } catch (NoSuchElementException e) {
-                    // Ignora se o ID sorteado não existir na árvore (apenas robustez para o gerador)
-                }
+                } catch (NoSuchElementException e) {}
             }
             pedidos.inserirFinal(pedido);
         }
         return pedidos;
     }
     
-    /**
-     * Tarefa 2: Método para inserir o pedido na tabela hash mapeada pelo produto.
-     * Se a lista de pedidos para aquele produto não existir, ela é criada.
-     */
     private static void inserirNaTabela(Produto produto, Pedido pedido) {
-        
         Lista<Pedido> listaDePedidos;
-        
         try {
             listaDePedidos = pedidosPorProduto.pesquisar(produto);
         } catch (NoSuchElementException excecao) {
@@ -192,62 +208,100 @@ public class App {
         listaDePedidos.inserirFinal(pedido);
     }
     
-    /**
-     * Tarefa 3 e 4: Gera relatório em arquivo e implementa robustez.
-     */
     static void pedidosDoProduto() {
-        
-        // Tarefa 4: Robustez - Verifica se o produto existe antes de tentar gerar relatório
         Produto produto = localizarProdutoID(produtosBalanceadosPorId);
-        
-        if (produto == null) {
-            System.out.println("Operação cancelada: Produto não encontrado.");
-            return;
-        }
+        if (produto == null) return;
         
         Lista<Pedido> listaDePedidos;
-        String nomeArquivo = "RelatorioProduto" + produto.hashCode() + ".txt";  
+        String nomeArquivo = "RelatorioPedidos_" + produto.hashCode() + ".txt";  
         
         try {
-            // Tenta buscar os pedidos na Tabela Hash
             listaDePedidos = pedidosPorProduto.pesquisar(produto);
-            
-            // Gravação do arquivo usando try-with-resources para garantir o fechamento
             try (FileWriter arquivoRelatorio = new FileWriter(nomeArquivo, Charset.forName("UTF-8"))) {
                 arquivoRelatorio.write("RELATÓRIO DE PEDIDOS\n");
-                arquivoRelatorio.write("Produto consultado: " + produto.toString() + "\n");
-                arquivoRelatorio.write("==================================================\n");
+                arquivoRelatorio.write("Produto: " + produto.toString() + "\n");
+                arquivoRelatorio.write("========================================\n");
                 arquivoRelatorio.write(listaDePedidos.toString() + "\n");
-                
-                System.out.println("Sucesso! O relatório foi salvo no arquivo: " + nomeArquivo);
+                System.out.println("Relatório salvo em: " + nomeArquivo);
             } catch(IOException excecao) {
-                System.out.println("Erro ao gravar o arquivo " + nomeArquivo + ": " + excecao.getMessage());        	
+                System.out.println("Erro ao gravar arquivo: " + excecao.getMessage());        	
             }
-            
         } catch (NoSuchElementException e) {
-            // Tarefa 4: Robustez - Produto existe no cadastro, mas não foi vendido em nenhum pedido
-            System.out.println("Atenção: Nenhum pedido encontrado contendo este produto.");
+            System.out.println("Nenhum pedido encontrado para este produto.");
+        }
+    }
+
+    static void relatorioDeFornecedor() {
+        cabecalho();
+        Integer id = lerOpcao("Digite o Documento (ID) do fornecedor: ", Integer.class);
+        if (id == null) return;
+
+        try {
+            Fornecedor f = fornecedoresPorID.pesquisar(id);
+            System.out.println("\n=== DADOS DO FORNECEDOR ===");
+            System.out.println(f.toString());
+        } catch (NoSuchElementException e) {
+            System.out.println("Fornecedor com documento " + id + " não encontrado.");
+        }
+    }
+
+
+    static void fornecedoresDoProduto() {
+        cabecalho();
+        System.out.println("Gerar relatório de fornecedores de um produto.");
+        Produto p = localizarProdutoID(produtosBalanceadosPorId);
+        
+        if (p == null) return;
+
+        String nomeArquivo = "FornecedoresDoProduto_" + p.hashCode() + ".txt";
+
+        try {
+            Lista<Fornecedor> lista = fornecedoresDoProduto.pesquisar(p);
+            
+            try (FileWriter fw = new FileWriter(nomeArquivo, Charset.forName("UTF-8"))) {
+                fw.write("RELATÓRIO DE FORNECEDORES\n");
+                fw.write("Produto: " + p.toString() + "\n");
+                fw.write("========================================\n");
+                fw.write(lista.toString()); 
+                System.out.println("Relatório gerado com sucesso: " + nomeArquivo);
+            } catch (IOException e) {
+                System.out.println("Erro ao escrever arquivo: " + e.getMessage());
+            }
+
+        } catch (NoSuchElementException e) {
+            System.out.println("Este produto não possui fornecedores cadastrados.");
         }
     }
     
     public static void main(String[] args) {
         teclado = new Scanner(System.in, Charset.forName("UTF-8"));
         nomeArquivoDados = "produtos.txt";
+        String nomeArquivoFornecedores = "fornecedores.txt";
         
+        System.out.println("Carregando produtos...");
         produtosBalanceadosPorId = lerProdutos(nomeArquivoDados, Produto::hashCode);
         
-        // Verifica se a leitura do arquivo funcionou antes de continuar
         if (produtosBalanceadosPorId == null) {
-            System.out.println("Erro crítico: Não foi possível ler o arquivo " + nomeArquivoDados);
-            System.out.println("Verifique se o arquivo está na raiz do projeto.");
+            System.out.println("Erro: Arquivo 'produtos.txt' não encontrado.");
             return;
         }
 
         produtosBalanceadosPorNome = new AVL<>(produtosBalanceadosPorId, produto -> produto.descricao, String::compareTo);
-        pedidosPorProduto = new TabelaHash<>((int)(quantosProdutos * 1.25));
+        pedidosPorProduto = new TabelaHash<>((int)(quantosProdutos * 1.5));
         
+
+        fornecedoresDoProduto = new TabelaHash<>((int)(quantosProdutos * 1.5));
+
         System.out.println("Gerando pedidos aleatórios...");
-        gerarPedidos(25_000); // Tarefa 1/2 implícita
+        gerarPedidos(1000); 
+
+        System.out.println("Carregando fornecedores...");
+ 
+        fornecedoresPorID = lerFornecedores(nomeArquivoFornecedores, Fornecedor::getDocumento);
+
+        if (fornecedoresPorID == null) {
+             System.out.println("Erro: Arquivo 'fornecedores.txt' não encontrado na raiz.");
+        }
        
         int opcao = -1;
       
@@ -256,6 +310,8 @@ public class App {
             switch (opcao) {
                 case 1 -> mostrarProduto(localizarProdutoID(produtosBalanceadosPorId));
                 case 2 -> pedidosDoProduto();
+                case 3 -> relatorioDeFornecedor(); 
+                case 4 -> fornecedoresDoProduto();
                 case 0 -> System.out.println("Saindo...");
                 default -> System.out.println("Opção inválida!");
             }
